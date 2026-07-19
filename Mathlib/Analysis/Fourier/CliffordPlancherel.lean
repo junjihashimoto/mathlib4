@@ -20,12 +20,16 @@ pseudoscalar `ω = e₀ ⋯ eₙ₋₁` of the Clifford algebra:
 `ℱ f ξ = ∫ x, exp (-2π ⟪x, ξ⟫ ω) * f x
        = ∫ x, (cos (2π ⟪x, ξ⟫) - sin (2π ⟪x, ξ⟫) ω) * f x`.
 
-For `n ≡ 3 [MOD 4]` the pseudoscalar is central with `ω² = -1`, so this is
-*literally* the ordinary Fourier transform of a vector-valued function for the
-complex structure on `Cl(n,0)` induced by `ω`
-(`CliffordAlgebra.Euclidean.instAlgebraComplex`). Equipping the Clifford
-algebra with a compatible complex Hilbert space structure, Plancherel's theorem
-and the Fourier inversion formula are inherited from the vector-valued case.
+For `n ≡ 2, 3 [MOD 4]` the pseudoscalar satisfies `ω² = -1`, so *left
+multiplication* by the kernel is complex scalar multiplication for the complex
+vector space structure on `Cl(n,0)` induced by `ω`
+(`CliffordAlgebra.Euclidean.instModuleComplex`) — this needs no commutation, so
+it covers both the central case `n ≡ 3 [MOD 4]` (e.g. the three-dimensional
+transform of Ebling–Scheuermann) and the non-central case `n ≡ 2 [MOD 4]`
+(e.g. the two-dimensional transform, where `ω` anticommutes with vectors).
+Equipping the Clifford algebra with a compatible complex Hilbert space
+structure, Plancherel's theorem and the Fourier inversion formula are inherited
+from the vector-valued case.
 
 ## Main definitions
 
@@ -69,7 +73,7 @@ open scoped FourierTransform RealInnerProductSpace
 
 namespace CliffordAlgebra.Euclidean
 
-variable {n : ℕ} [Fact (n % 4 = 3)]
+variable {n : ℕ} [Fact (n % 4 = 2 ∨ n % 4 = 3)]
 
 /-! ### Finite dimensionality -/
 

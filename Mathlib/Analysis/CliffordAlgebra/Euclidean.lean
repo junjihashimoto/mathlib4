@@ -202,29 +202,47 @@ theorem commute_pseudoscalar (hn : Odd n) (a : CliffordAlgebra (Q n)) :
   | mul a b ha hb => exact ha.mul_right hb
   | add a b ha hb => exact ha.add_right hb
 
-/-! ### The complex structure for `n ≡ 3 [MOD 4]` -/
+/-! ### The complex structure for `n ≡ 2, 3 [MOD 4]`
 
-section Mod4
+For `n ≡ 2, 3 [MOD 4]` the pseudoscalar squares to `-1`, so *left multiplication* by
+it is a complex structure, making `Cl(n,0)` a complex vector space with
+`z • a = complexLift n z * a`. No commutation hypothesis is needed for a module
+structure (in contrast to an `Algebra ℂ` structure); this covers the non-central case
+`n ≡ 2 [MOD 4]` — e.g. the two-dimensional Clifford–Fourier transform — where the
+pseudoscalar anticommutes with vectors. -/
 
-variable [hn4 : Fact (n % 4 = 3)]
+instance factOr_of_factTwo [h : Fact (n % 4 = 2)] : Fact (n % 4 = 2 ∨ n % 4 = 3) :=
+  ⟨Or.inl h.out⟩
 
-theorem odd_of_fact_mod_four : Odd n := Nat.odd_iff.mpr (by have := hn4.out; omega)
+instance factOr_of_factThree [h : Fact (n % 4 = 3)] : Fact (n % 4 = 2 ∨ n % 4 = 3) :=
+  ⟨Or.inr h.out⟩
+
+section SquareRootNegOne
+
+variable [hn4 : Fact (n % 4 = 2 ∨ n % 4 = 3)]
 
 theorem odd_choose_two : Odd (n.choose 2) := by
-  obtain ⟨k, rfl⟩ : ∃ k, n = 4 * k + 3 := ⟨n / 4, by have := hn4.out; omega⟩
-  have h2 : (4 * k + 3) * (4 * k + 3 - 1) = ((4 * k + 3) * (2 * k + 1)) * 2 := by
-    rw [show 4 * k + 3 - 1 = 4 * k + 2 by omega]; ring
-  rw [Nat.choose_two_right, h2, Nat.mul_div_cancel _ two_pos]
-  exact Nat.odd_mul.mpr ⟨⟨2 * k + 1, by ring⟩, ⟨k, by ring⟩⟩
+  rcases hn4.out with h | h
+  · obtain ⟨k, rfl⟩ : ∃ k, n = 4 * k + 2 := ⟨n / 4, by omega⟩
+    have h2 : (4 * k + 2) * (4 * k + 2 - 1) = ((2 * k + 1) * (4 * k + 1)) * 2 := by
+      rw [show 4 * k + 2 - 1 = 4 * k + 1 by omega]; ring
+    rw [Nat.choose_two_right, h2, Nat.mul_div_cancel _ two_pos]
+    exact Nat.odd_mul.mpr ⟨⟨k, by ring⟩, ⟨2 * k, by ring⟩⟩
+  · obtain ⟨k, rfl⟩ : ∃ k, n = 4 * k + 3 := ⟨n / 4, by omega⟩
+    have h2 : (4 * k + 3) * (4 * k + 3 - 1) = ((4 * k + 3) * (2 * k + 1)) * 2 := by
+      rw [show 4 * k + 3 - 1 = 4 * k + 2 by omega]; ring
+    rw [Nat.choose_two_right, h2, Nat.mul_div_cancel _ two_pos]
+    exact Nat.odd_mul.mpr ⟨⟨2 * k + 1, by ring⟩, ⟨k, by ring⟩⟩
 
-/-- For `n ≡ 3 [MOD 4]`, the pseudoscalar of `Cl(n,0)` is a square root of `-1`. -/
+/-- For `n ≡ 2, 3 [MOD 4]`, the pseudoscalar of `Cl(n,0)` is a square root of `-1`. -/
 @[simp] theorem pseudoscalar_mul_pseudoscalar :
     pseudoscalar n * pseudoscalar n = -1 := by
   rw [pseudoscalar_mul_pseudoscalar', (odd_choose_two (n := n)).neg_one_pow, neg_smul, one_smul]
 
 variable (n) in
 /-- The real-algebra morphism `ℂ →ₐ[ℝ] Cl(n,0)` sending `I` to the pseudoscalar,
-for `n ≡ 3 [MOD 4]`. -/
+for `n ≡ 2, 3 [MOD 4]`. Its image is the commutative subalgebra `ℝ[ω]`, so no
+centrality is needed. -/
 def complexLift : ℂ →ₐ[ℝ] CliffordAlgebra (Q n) :=
   Complex.liftAux (pseudoscalar n) pseudoscalar_mul_pseudoscalar
 
@@ -232,12 +250,46 @@ theorem complexLift_apply (z : ℂ) :
     complexLift n z = algebraMap ℝ _ z.re + z.im • pseudoscalar n :=
   Complex.liftAux_apply _ _ z
 
-/-- For `n ≡ 3 [MOD 4]`, `Cl(n,0)` is a complex algebra with `I` acting as the
-pseudoscalar.
+/-- For `n ≡ 2, 3 [MOD 4]`, `Cl(n,0)` is a complex vector space, `I` acting by left
+multiplication by the pseudoscalar. For `n ≡ 2 [MOD 4]` the pseudoscalar is *not*
+central and this module structure does not extend to an `Algebra ℂ` structure
+(see `CliffordAlgebra.Euclidean.algebraComplex` for `n ≡ 3 [MOD 4]`).
 
 This is a scoped instance since it involves the choice of a pseudoscalar
 (i.e. an orientation of `ℝⁿ`). -/
-scoped instance instAlgebraComplex : Algebra ℂ (CliffordAlgebra (Q n)) :=
+scoped instance instModuleComplex : Module ℂ (CliffordAlgebra (Q n)) :=
+  Module.compHom _ (complexLift n).toRingHom
+
+/-- The complex scalar action on `Cl(n,0)` is left multiplication by `complexLift`. -/
+theorem complex_smul_def (z : ℂ) (a : CliffordAlgebra (Q n)) :
+    z • a = complexLift n z * a := rfl
+
+scoped instance : IsScalarTower ℝ ℂ (CliffordAlgebra (Q n)) :=
+  ⟨fun r z a => by
+    rw [complex_smul_def, complex_smul_def, map_smul, smul_mul_assoc]⟩
+
+scoped instance : SMulCommClass ℂ ℂ (CliffordAlgebra (Q n)) :=
+  ⟨fun z w a => by
+    rw [complex_smul_def, complex_smul_def, complex_smul_def, complex_smul_def,
+      ← mul_assoc, ← mul_assoc, ← map_mul, ← map_mul, mul_comm z w]⟩
+
+end SquareRootNegOne
+
+/-! ### The `Algebra ℂ` structure for `n ≡ 3 [MOD 4]` -/
+
+section Mod4Three
+
+variable [hn3 : Fact (n % 4 = 3)]
+
+theorem odd_of_fact_mod_four : Odd n := Nat.odd_iff.mpr (by have := hn3.out; omega)
+
+variable (n) in
+/-- For `n ≡ 3 [MOD 4]` the pseudoscalar is moreover *central*, so the complex module
+structure `CliffordAlgebra.Euclidean.instModuleComplex` extends to an `Algebra ℂ`
+structure. This is not an instance, to keep a single uniform `Module ℂ` path for
+`n ≡ 2, 3 [MOD 4]`; activate it with `letI` where needed. -/
+@[instance_reducible]
+def algebraComplex : Algebra ℂ (CliffordAlgebra (Q n)) :=
   ((complexLift n).toRingHom).toAlgebra' fun z a => by
     have h : Commute (complexLift n z) a := by
       rw [complexLift_apply]
@@ -245,17 +297,6 @@ scoped instance instAlgebraComplex : Algebra ℂ (CliffordAlgebra (Q n)) :=
         (((commute_pseudoscalar odd_of_fact_mod_four a)).smul_left z.im)
     exact h
 
-/-- The complex scalar action on `Cl(n,0)` is left multiplication by `complexLift`. -/
-theorem complex_smul_def (z : ℂ) (a : CliffordAlgebra (Q n)) :
-    z • a = complexLift n z * a := rfl
-
-theorem algebraMap_complex_apply (z : ℂ) :
-    algebraMap ℂ (CliffordAlgebra (Q n)) z = algebraMap ℝ _ z.re + z.im • pseudoscalar n :=
-  complexLift_apply z
-
-scoped instance : IsScalarTower ℝ ℂ (CliffordAlgebra (Q n)) :=
-  IsScalarTower.of_algebraMap_eq' (complexLift n).comp_algebraMap.symm
-
-end Mod4
+end Mod4Three
 
 end CliffordAlgebra.Euclidean
